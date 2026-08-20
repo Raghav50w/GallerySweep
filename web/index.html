@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GallerySweep &mdash; Duplicate Photo Detector</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header>
+    <h1>GallerySweep</h1>
+    <p class="sub">Finds duplicates across every subfolder, including rotated copies and padded screenshots. Deleted files go to the Recycle Bin.</p>
+  </header>
+
+  <main>
+    <section id="setup" class="panel">
+      <div class="row">
+        <input id="folder" type="text" spellcheck="false"
+               placeholder="Paste a folder path, or use Browse">
+        <button id="browse" type="button">Browse</button>
+        <label class="mode">
+          <input type="radio" name="mode" value="fast" checked>
+          <span class="mode-name">Fast</span>
+          <span class="mode-note">perceptual hash</span>
+        </label>
+        <label class="mode" id="smartMode">
+          <input type="radio" name="mode" value="smart">
+          <span class="mode-name">Smart</span>
+          <span class="mode-note">hash &rarr; CNN</span>
+        </label>
+        <button id="scan" class="primary" type="button">Scan folder</button>
+      </div>
+
+      <div class="row slider" id="sliderRow" hidden>
+        <label for="similarity">Similarity <output id="similarityOut">65%</output></label>
+        <input type="range" id="similarity" min="55" max="100" step="1" value="65">
+      </div>
+
+      <p id="setupError" class="error" hidden></p>
+    </section>
+
+    <section id="progress" class="panel" hidden>
+      <p id="phaseLabel">Working…</p>
+      <div class="bar"><div id="barFill"></div></div>
+      <p id="progressCounts" class="muted"></p>
+    </section>
+
+    <section id="review" hidden>
+      <p id="summary" class="muted"></p>
+      <details id="errorBox" hidden>
+        <summary id="errorSummary"></summary>
+        <ul id="errorList"></ul>
+      </details>
+      <p id="emptyState" hidden>No duplicates found in this folder.</p>
+      <div id="groups"></div>
+    </section>
+  </main>
+
+  <footer id="footer" hidden>
+    <span id="counter">0 files &middot; 0 MB</span>
+    <button id="delete" class="danger" type="button">Delete</button>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

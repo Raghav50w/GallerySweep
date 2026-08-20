@@ -1,0 +1,13 @@
+metric,value
+images,50
+photos with duplicates,3
+true duplicate pairs,10
+candidate pairs at threshold,10
+total possible pairs,1225
+pair precision,1.0000
+pair recall,1.0000
+pair f1,1.0000
+false positive pairs,0
+groups shown to the user,3
+groups mixing unrelated photos,0
+keeper was the original,1/3

@@ -1,0 +1,1 @@
+"""GallerySweep - duplicate photo detector."""

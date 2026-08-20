@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+pillow
+imagehash
+numpy>=2.0
+scipy
+send2trash
+pytest
+
+# Smart mode. The default PyPI wheels are CPU-only on Windows, which is what
+# this project wants -- no CUDA index URL and no extra install step. Neither is
+# imported until a Smart scan actually runs.
+torch
+torchvision

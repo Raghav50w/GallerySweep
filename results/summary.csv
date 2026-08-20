@@ -1,0 +1,14 @@
+metric,value
+images,16000
+base photos,800
+duplicate pairs,152000
+non-duplicate pairs,127840000
+average precision (normalized),0.8291
+average precision (no normalization),0.4988
+shipped threshold,10
+precision at shipped threshold,0.999957
+recall at shipped threshold,0.7714
+f1 at shipped threshold,0.8709
+false positives at shipped threshold,5
+best f1,0.8839
+best f1 threshold,12

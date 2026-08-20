@@ -1,0 +1,3 @@
+# Extra packages for the benchmark. The app itself does not need these.
+matplotlib
+pandas

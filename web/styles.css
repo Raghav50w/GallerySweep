@@ -1,0 +1,206 @@
+:root {
+  --bg: #14161a;
+  --panel: #1c1f25;
+  --panel-2: #23272f;
+  --line: #2f343d;
+  --text: #e6e8ec;
+  --muted: #9aa2b1;
+  --accent: #4c8dff;
+  --danger: #e5484d;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+/* Several elements below set `display: flex`, which outranks the user-agent
+   rule behind the `hidden` attribute. Without this they never hide. */
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  padding: 0 0 5rem;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 system-ui, "Segoe UI", sans-serif;
+}
+
+header {
+  padding: 1.75rem 1.5rem 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+h1 { margin: 0; font-size: 1.35rem; letter-spacing: -0.01em; }
+.sub { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.9rem; }
+.muted { color: var(--muted); }
+
+main { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 1.1rem;
+  margin-bottom: 1.25rem;
+}
+
+.row { display: flex; gap: 0.6rem; align-items: center; margin-bottom: 0.9rem; }
+
+input[type="text"] {
+  flex: 1;
+  padding: 0.55rem 0.7rem;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--text);
+  font-size: 0.92rem;
+}
+input[type="text"]:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+button {
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--muted); }
+button:disabled { opacity: 0.45; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+
+.mode {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel-2);
+  cursor: pointer;
+}
+.mode-name { font-weight: 600; }
+.mode-note { color: var(--muted); font-size: 0.82rem; }
+.mode.is-disabled { opacity: 0.5; cursor: not-allowed; }
+
+.slider { gap: 1rem; }
+.slider input[type="range"] { flex: 1; max-width: 320px; accent-color: var(--accent); }
+
+.error {
+  margin: 0.4rem 0 0;
+  color: #ffb4b6;
+  background: rgba(229, 72, 77, 0.12);
+  border: 1px solid rgba(229, 72, 77, 0.35);
+  border-radius: 7px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.88rem;
+}
+
+.bar {
+  height: 6px;
+  background: var(--panel-2);
+  border-radius: 99px;
+  overflow: hidden;
+  margin: 0.6rem 0;
+}
+#barFill { height: 100%; width: 0; background: var(--accent); transition: width 0.2s; }
+
+#summary { margin: 0 0 1rem; font-size: 0.9rem; }
+
+#errorBox {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  margin-bottom: 1rem;
+  font-size: 0.86rem;
+}
+#errorBox summary { cursor: pointer; color: #ffb4b6; }
+#errorList { margin: 0.5rem 0 0; padding-left: 1.1rem; color: var(--muted); }
+
+.group {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.9rem;
+  margin-bottom: 1rem;
+}
+.group > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0 0 0.7rem;
+  margin: 0;
+  max-width: none;
+  font-size: 0.88rem;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.tile {
+  position: relative;
+  display: block;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 0.5rem;
+  cursor: pointer;
+}
+
+.tile input[type="checkbox"] {
+  position: absolute;
+  top: 0.7rem;
+  left: 0.7rem;
+  width: 18px;
+  height: 18px;
+  z-index: 1;
+}
+
+.tile img {
+  display: block;
+  width: 100%;
+  height: 150px;
+  object-fit: contain;
+  background: #0e1013;
+  border-radius: 6px;
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin-top: 0.45rem;
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+.meta .name {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+}
+footer #counter { font-size: 0.92rem; }
+
+@media (max-width: 620px) {
+  .row { flex-wrap: wrap; }
+  .tiles { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+}

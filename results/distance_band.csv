@@ -1,0 +1,7 @@
+metric,value
+pairs in distance band 12-16,85592
+true duplicates in the band,9070
+hash precision if the band is accepted,0.1060
+CNN cosine threshold on the band,0.5025
+CNN precision on the band,0.9519
+CNN recall within the band,0.9959
