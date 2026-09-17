@@ -1,7 +1,5 @@
 """FastAPI app: six endpoints and the static page."""
 
-from __future__ import annotations
-
 import logging
 import subprocess
 import sys
@@ -60,16 +58,11 @@ class DeleteRequest(BaseModel):
 
 @app.get("/api/config")
 def get_config() -> dict:
-    """What the page needs to render its controls without hardcoding numbers."""
+    """The slider bounds, so the page does not hardcode them."""
     return {
-        "fast_hamming_threshold": FAST_HAMMING_THRESHOLD,
-        "candidate_gate": CANDIDATE_HAMMING_GATE,
-        "fast_similarity": round(hamming_to_similarity(FAST_HAMMING_THRESHOLD), 4),
-        "min_similarity": round(hamming_to_similarity(CANDIDATE_HAMMING_GATE), 4),
         "cosine_min": COSINE_MIN,
         "cosine_max": COSINE_MAX,
         "cosine_default": COSINE_DEFAULT,
-        "smart_available": True,
     }
 
 
@@ -124,7 +117,7 @@ def groups(
     the CNN cosine directly. The frontend sends the same slider value either way.
     """
     smart = mode == "smart"
-    min_cosine: float | None = None
+    min_cosine = None
 
     if smart:
         # The hash gate still bounds what exists; the CNN re-ranks inside it.
@@ -147,8 +140,9 @@ def groups(
     finally:
         conn.close()
 
-    images = {
-        image_id: {
+    images = {}
+    for image_id, row in records.items():
+        images[image_id] = {
             "path": row["path"],
             "name": Path(row["path"]).name,
             "width": row["width"],
@@ -156,8 +150,6 @@ def groups(
             "size": row["size"],
             "mtime": row["mtime"],
         }
-        for image_id, row in records.items()
-    }
     if smart:
         scored = [(r["image_a"], r["image_b"], float(r["cosine"])) for r in rows]
         shown_threshold = round(float(min_cosine), 4)
@@ -169,6 +161,12 @@ def groups(
         shown_threshold = round(hamming_to_similarity(max_hamming), 4)
     found = assemble_groups(scored, images)
 
+    selected_count = 0
+    for group in found:
+        for item in group["files"]:
+            if not item["keep"]:
+                selected_count += 1
+
     return {
         "mode": mode,
         "threshold": shown_threshold,
@@ -177,9 +175,7 @@ def groups(
         "groups": found,
         "group_count": len(found),
         "file_count": sum(len(g["files"]) for g in found),
-        "selected_count": sum(
-            1 for g in found for f in g["files"] if not f["keep"]
-        ),
+        "selected_count": selected_count,
         "reclaimable": sum(g["reclaimable"] for g in found),
     }
 

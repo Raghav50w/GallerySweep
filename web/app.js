@@ -11,16 +11,6 @@ const state = {
   polling: null,
 };
 
-// Thumbnails only load once their card scrolls into view.
-const lazyThumbs = new IntersectionObserver((entries, observer) => {
-  for (const entry of entries) {
-    if (!entry.isIntersecting) continue;
-    const img = entry.target;
-    img.src = img.dataset.src;
-    observer.unobserve(img);
-  }
-}, { rootMargin: "300px" });
-
 function humanBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`;
   const units = ["KB", "MB", "GB", "TB"];
@@ -228,11 +218,12 @@ function renderTile(file) {
     updateCounter();
   });
 
+  // loading="lazy" lets the browser fetch each thumbnail only once its
+  // card is near the viewport.
   const img = document.createElement("img");
   img.alt = file.name;
   img.loading = "lazy";
-  img.dataset.src = `/api/thumb/${file.id}`;
-  lazyThumbs.observe(img);
+  img.src = `/api/thumb/${file.id}`;
 
   const meta = document.createElement("div");
   meta.className = "meta";
@@ -299,10 +290,8 @@ async function init() {
     slider.max = Math.round(state.config.cosine_max * 100);
     slider.value = Math.round(state.config.cosine_default * 100);
     $("similarityOut").textContent = `${slider.value}%`;
-    if (state.config.smart_available) {
-      $("smartMode").classList.remove("is-disabled");
-      $("smartMode").querySelector("input").disabled = false;
-    }
+    $("smartMode").classList.remove("is-disabled");
+    $("smartMode").querySelector("input").disabled = false;
   }
 
   $("browse").addEventListener("click", browse);

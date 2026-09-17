@@ -12,8 +12,6 @@ orientation. The gap between the two curves is what the normalization stage
 buys.
 """
 
-from __future__ import annotations
-
 import argparse
 import csv
 import hashlib
@@ -26,14 +24,8 @@ import imagehash
 import numpy as np
 import pandas as pd
 
-if __package__ in (None, ""):  # allow `python eval/run_eval.py`, not just `-m`
-    import sys
-
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
 from app.config import DISTANCE_CHUNK_BYTES, HASH_BITS, HASH_SIZE, PROJECT_ROOT
 from app.hashing import hash_variants
-from app.matching import _popcount
 from app.normalize import border_crop, load_image
 
 DATA = PROJECT_ROOT / "data"
@@ -133,7 +125,7 @@ def distance_histograms(
         stop = min(start + chunk, n)
         rows = np.arange(start, stop)
         queries = hashes[start:stop, 0][:, np.newaxis, np.newaxis]
-        distances = _popcount(queries ^ index).min(axis=2)
+        distances = np.bitwise_count(queries ^ index).min(axis=2)
 
         # Upper triangle only: each unordered pair counted once, no self-pairs.
         upper = columns > rows[:, np.newaxis]
@@ -235,10 +227,10 @@ def per_transform_table(
         a = np.array([p[0] for p in pairs])
         b = np.array([p[1] for p in pairs])
 
-        norm_distance = _popcount(
+        norm_distance = np.bitwise_count(
             normalized[a, 0][:, np.newaxis] ^ normalized[b]
         ).min(axis=1)
-        raw_distance = _popcount(raw[a, 0] ^ raw[b, 0])
+        raw_distance = np.bitwise_count(raw[a, 0] ^ raw[b, 0])
         identical = checksums[a] == checksums[b]
 
         rows.append(

@@ -1,9 +1,5 @@
 """Perceptual hashing of the 4 normalized rotations."""
 
-from __future__ import annotations
-
-from pathlib import Path
-
 import imagehash
 from PIL import Image
 
@@ -11,7 +7,7 @@ from app.config import HASH_SIZE
 from app.normalize import normalize, rotations
 
 
-def hash_variants(img: Image.Image) -> dict[int, str]:
+def hash_variants(img: Image.Image) -> dict:
     """pHash each rotation, as 16-char hex.
 
     Hex, not int: SQLite's INTEGER is signed 64-bit, so roughly half of all
@@ -29,7 +25,7 @@ def hash_variants(img: Image.Image) -> dict[int, str]:
     }
 
 
-def hash_file(path: str | Path) -> tuple[dict[int, str], int, int]:
+def hash_file(path) -> tuple:
     """Normalize a file and hash it. Returns (hashes, orig_width, orig_height)."""
     img, width, height = normalize(path)
     return hash_variants(img), width, height

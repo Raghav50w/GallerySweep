@@ -1,10 +1,7 @@
 """SQLite cache: two tables, plus the lifecycle rules that keep them honest."""
 
-from __future__ import annotations
-
 import sqlite3
 from pathlib import Path
-from typing import Iterable, Sequence
 
 from app.config import CACHE_DIR, DB_PATH, THUMBS_DIR
 
@@ -61,7 +58,7 @@ def prune_missing(conn: sqlite3.Connection) -> int:
     return len(missing)
 
 
-def lookup(conn: sqlite3.Connection, path: str, size: int, mtime: int) -> int | None:
+def lookup(conn: sqlite3.Connection, path: str, size: int, mtime: int):
     """Cache hit on (path, size, mtime) -> the image id, so hashing is skipped."""
     row = conn.execute(
         "SELECT id FROM images WHERE path = ? AND size = ? AND mtime = ?",
@@ -78,7 +75,7 @@ def upsert_image(
     mtime: int,
     width: int,
     height: int,
-    hashes: dict[int, str],
+    hashes: dict,
 ) -> int:
     conn.execute(
         """
@@ -96,27 +93,28 @@ def upsert_image(
     return int(row["id"])
 
 
-def images_by_id(conn: sqlite3.Connection, ids: Sequence[int]) -> dict[int, sqlite3.Row]:
+def images_by_id(conn: sqlite3.Connection, ids) -> dict:
     ids = list(ids)
     if not ids:
         return {}
-    out: dict[int, sqlite3.Row] = {}
+    out = {}
     for start in range(0, len(ids), 500):  # stay clear of SQLite's parameter limit
         chunk = ids[start : start + 500]
         placeholders = ",".join("?" * len(chunk))
         rows = conn.execute(
             f"SELECT {IMAGE_COLUMNS} FROM images WHERE id IN ({placeholders})", chunk
         ).fetchall()
-        out.update({int(row["id"]): row for row in rows})
+        for row in rows:
+            out[int(row["id"])] = row
     return out
 
 
-def image_path(conn: sqlite3.Connection, image_id: int) -> str | None:
+def image_path(conn: sqlite3.Connection, image_id: int):
     row = conn.execute("SELECT path FROM images WHERE id = ?", (image_id,)).fetchone()
     return row["path"] if row else None
 
 
-def replace_pairs(conn: sqlite3.Connection, rows: Iterable[tuple]) -> None:
+def replace_pairs(conn: sqlite3.Connection, rows) -> None:
     """Wipe and rewrite. Pairs are cheap to recompute (hashes stay cached) and
     they reference ids that shift as files come and go -- stale pairs would
     resurrect deleted photos in the review grid."""
@@ -131,9 +129,7 @@ def replace_pairs(conn: sqlite3.Connection, rows: Iterable[tuple]) -> None:
     conn.commit()
 
 
-def update_cosines(
-    conn: sqlite3.Connection, rows: Iterable[tuple[float | None, int, int]]
-) -> None:
+def update_cosines(conn: sqlite3.Connection, rows) -> None:
     """Fill in the CNN scores for pairs `replace_pairs` inserted as NULL.
 
     A pure UPDATE, so the candidate set the hash stage chose is never widened by
@@ -145,9 +141,7 @@ def update_cosines(
     conn.commit()
 
 
-def load_pairs(
-    conn: sqlite3.Connection, max_hamming: int, min_cosine: float | None = None
-) -> list[sqlite3.Row]:
+def load_pairs(conn: sqlite3.Connection, max_hamming: int, min_cosine=None) -> list:
     """Candidate pairs within `max_hamming`, optionally re-ranked by the CNN.
 
     With `min_cosine` set, pairs the CNN never scored (NULL) drop out: in Smart
@@ -174,7 +168,7 @@ def load_pairs(
     ).fetchall()
 
 
-def forget_images(conn: sqlite3.Connection, ids: Sequence[int]) -> None:
+def forget_images(conn: sqlite3.Connection, ids) -> None:
     """Remove image rows and every pair that references them."""
     ids = list(ids)
     if not ids:

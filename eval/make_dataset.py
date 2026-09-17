@@ -9,8 +9,6 @@ seed reproduces the benchmark exactly.
     python -m eval.make_dataset --limit 50 # quick trial run
 """
 
-from __future__ import annotations
-
 import argparse
 import csv
 import random
@@ -21,9 +19,6 @@ import zipfile
 from pathlib import Path
 
 from PIL import Image
-
-if __package__ in (None, ""):  # allow `python eval/make_dataset.py`, not just `-m`
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.config import PROJECT_ROOT
 from eval.augment import TRANSFORMS, WHATSAPP_QUALITY, resize, WHATSAPP_LONG_EDGE

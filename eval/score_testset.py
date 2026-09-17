@@ -12,20 +12,13 @@ a person pointing the app at a messy folder gets the right groups, and whether
 the photo it offers to keep is the original.
 """
 
-from __future__ import annotations
-
 import argparse
-import sys
 import time
 from concurrent.futures import ProcessPoolExecutor
 from itertools import combinations
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
-
-if __package__ in (None, ""):  # allow `python eval/score_testset.py`, not just `-m`
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.config import (
     CANDIDATE_HAMMING_GATE,

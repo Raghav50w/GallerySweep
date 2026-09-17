@@ -4,8 +4,6 @@ Nothing is ever written into the folder being cleaned -- thumbnails live in
 `cache/thumbs/` inside the project.
 """
 
-from __future__ import annotations
-
 from pathlib import Path
 
 from app.config import THUMB_QUALITY, THUMB_SIZE, THUMBS_DIR
@@ -16,7 +14,7 @@ def thumb_path(image_id: int) -> Path:
     return THUMBS_DIR / f"{image_id}.webp"
 
 
-def ensure_thumb(image_id: int, source: str | Path) -> Path:
+def ensure_thumb(image_id: int, source) -> Path:
     """Return the cached thumbnail, rendering it first if it is missing or stale."""
     source = Path(source)
     target = thumb_path(image_id)

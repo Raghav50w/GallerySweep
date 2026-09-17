@@ -23,19 +23,11 @@ Embeddings are cached to `data/embeddings.npy` (~2 GB, gitignored), so
 re-running the metrics does not re-embed. Budget ~40 minutes for the first run.
 """
 
-from __future__ import annotations
-
 import argparse
 import time
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
-if __package__ in (None, ""):  # allow `python eval/run_cnn_eval.py`, not just -m
-    import sys
-
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.config import (
     CANDIDATE_HAMMING_GATE,
@@ -46,7 +38,6 @@ from app.config import (
     ROTATIONS,
 )
 from app.embeddings import embed_images
-from app.matching import _popcount
 from eval.run_eval import (
     MANIFEST,
     TARGET_PRECISION,
@@ -176,7 +167,7 @@ def sweep_all_pairs(
         stop = min(start + chunk, n)
         rows = np.arange(start, stop)
 
-        distances = _popcount(hashes[start:stop, 0][:, None, None] ^ hashes[None, :, :])
+        distances = np.bitwise_count(hashes[start:stop, 0][:, None, None] ^ hashes[None, :, :])
         best = distances.min(axis=2)
         best_rotation = distances.argmin(axis=2)
 
@@ -314,7 +305,7 @@ def per_transform_table(
         a = np.array([p[0] for p in pairs])
         b = np.array([p[1] for p in pairs])
 
-        distances = _popcount(hashes[a, 0][:, None] ^ hashes[b])
+        distances = np.bitwise_count(hashes[a, 0][:, None] ^ hashes[b])
         best = distances.min(axis=1)
         best_rotation = distances.argmin(axis=1)
 

@@ -6,11 +6,6 @@ the DCT basis, so an image and its own rotation land ~32/64 bits apart --
 statistically indistinguishable from two unrelated photos.
 """
 
-from __future__ import annotations
-
-from pathlib import Path
-from typing import IO
-
 from PIL import Image, ImageChops, ImageOps
 
 from app.config import BORDER_MIN_AREA_REDUCTION, BORDER_TOLERANCE, ROTATIONS
@@ -25,14 +20,17 @@ _ROTATE_OPS = {
 }
 
 
-def load_image(path: str | Path | IO[bytes]) -> Image.Image:
+def load_image(path) -> Image.Image:
     """Open a file (or an open byte stream) and apply its EXIF orientation tag."""
     with Image.open(path) as im:
         im.load()
-        return ImageOps.exif_transpose(im) or im
+        oriented = ImageOps.exif_transpose(im)
+        if oriented is None:
+            return im
+        return oriented
 
 
-def _uniform_corner_colour(rgb: Image.Image, tolerance: int) -> tuple[int, int, int] | None:
+def _uniform_corner_colour(rgb: Image.Image, tolerance: int):
     """Return the border colour if all four corners agree, else None."""
     w, h = rgb.size
     if w < 2 or h < 2:
@@ -43,10 +41,19 @@ def _uniform_corner_colour(rgb: Image.Image, tolerance: int) -> tuple[int, int, 
         rgb.getpixel((0, h - 1)),
         rgb.getpixel((w - 1, h - 1)),
     ]
-    for channel in zip(*corners):
-        if max(channel) - min(channel) > tolerance:
+    # Compare the corners one colour channel at a time -- red, then green,
+    # then blue. If any channel spreads wider than the tolerance the corners
+    # disagree, so there is no single border colour to report.
+    averages = []
+    for channel in range(3):
+        values = []
+        for corner in corners:
+            values.append(corner[channel])
+        if max(values) - min(values) > tolerance:
             return None
-    return tuple(sum(channel) // len(channel) for channel in zip(*corners))  # type: ignore[return-value]
+        averages.append(sum(values) // len(values))
+
+    return (averages[0], averages[1], averages[2])
 
 
 def border_crop(
@@ -82,7 +89,7 @@ def border_crop(
     return img.crop(bbox)
 
 
-def rotations(img: Image.Image) -> dict[int, Image.Image]:
+def rotations(img: Image.Image) -> dict:
     """The 4 axis-aligned rotations. No mirroring -- mirrored photos are rare."""
     out = {0: img}
     for degrees in ROTATIONS[1:]:
@@ -90,7 +97,7 @@ def rotations(img: Image.Image) -> dict[int, Image.Image]:
     return out
 
 
-def normalize(path: str | Path) -> tuple[Image.Image, int, int]:
+def normalize(path) -> tuple:
     """Load, orient and de-pad an image.
 
     Returns the normalized image plus the *original* (oriented, uncropped) width

@@ -13,19 +13,13 @@ in a different subfolder, with phone-style filenames.
 be scored rather than only eyeballed.
 """
 
-from __future__ import annotations
-
 import argparse
 import csv
 import random
 import shutil
-import sys
 from pathlib import Path
 
 from PIL import Image
-
-if __package__ in (None, ""):  # allow `python eval/make_testset.py`, not just `-m`
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.config import PROJECT_ROOT
 from eval.augment import brightness, crop, pad, resize, rotate

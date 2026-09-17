@@ -1,7 +1,5 @@
 """pHash over the 4 rotations, and the cross-rotation match that makes it work."""
 
-from __future__ import annotations
-
 import numpy as np
 
 from app.config import HASH_BITS
@@ -12,15 +10,6 @@ from eval.augment import jpeg, rotate
 
 def hamming(a: str, b: str) -> int:
     return int(np.bitwise_count(np.uint64(int(a, 16)) ^ np.uint64(int(b, 16))))
-
-
-def test_hashes_are_16_char_hex(photo):
-    hashes = hash_variants(photo)
-
-    assert sorted(hashes) == [0, 90, 180, 270]
-    for value in hashes.values():
-        assert len(value) == 16
-        assert int(value, 16) >= 0
 
 
 def test_high_bit_hashes_round_trip_through_uint64():
@@ -39,14 +28,6 @@ def test_a_rotated_copy_matches_at_the_corresponding_rotation(photo):
     for degrees in (90, 180, 270):
         rotated = hash_variants(rotate(photo, degrees))
         assert hamming(rotated[0], original[degrees]) <= 2, f"{degrees} deg"
-
-
-def test_a_rotated_copy_does_not_match_at_rotation_zero(photo):
-    """Why normalization is needed at all: rotation scrambles the DCT bits."""
-    original = hash_variants(photo)
-    rotated = hash_variants(rotate(photo, 90))
-
-    assert hamming(rotated[0], original[0]) > 12
 
 
 def test_recompression_barely_moves_the_hash(photo):

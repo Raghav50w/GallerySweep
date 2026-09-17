@@ -1,9 +1,0 @@
-metric,value
-images,16000
-duplicate pairs,152000
-non-duplicate pairs,127840000
-candidate pairs at the gate,202849
-candidate recall (cascade ceiling),0.8311
-images embedded by the cascade,15907
-images embedded scoring every pair,16000
-CNN work saved,1.01x

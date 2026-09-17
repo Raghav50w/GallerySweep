@@ -1,10 +1,7 @@
 """Deletion. The Recycle Bin is the undo -- there is no quarantine folder."""
 
-from __future__ import annotations
-
 import logging
 import os
-from typing import Sequence
 
 from send2trash import send2trash
 
@@ -14,14 +11,14 @@ from app.thumbs import discard_thumb
 log = logging.getLogger(__name__)
 
 
-def delete_images(conn, image_ids: Sequence[int]) -> dict:
+def delete_images(conn, image_ids: list) -> dict:
     """send2trash each file, then drop its rows.
 
     send2trash fails on network drives and on removable media with no Recycle
     Bin. Report that to the user rather than falling back to a real delete.
     """
-    deleted: list[int] = []
-    failed: list[dict] = []
+    deleted = []
+    failed = []
     freed = 0
 
     rows = db.images_by_id(conn, list(image_ids))

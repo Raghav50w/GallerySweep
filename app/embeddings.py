@@ -10,15 +10,12 @@ torch is imported lazily. `python -m app.main` must start in about a second,
 and importing torch at module scope costs several.
 """
 
-from __future__ import annotations
-
 import logging
 import threading
-from typing import Callable, Iterable, Sequence
 
 import numpy as np
 
-from app.config import EMBED_BATCH_SIZE, EMBED_DIM
+from app.config import EMBED_BATCH_SIZE
 from app.normalize import normalize, rotations
 
 log = logging.getLogger(__name__)
@@ -26,9 +23,6 @@ log = logging.getLogger(__name__)
 _LOCK = threading.Lock()
 _MODEL = None
 _TRANSFORM = None
-
-# (image_id, path, rotation_degrees)
-Work = tuple[int, str, int]
 
 
 def _load_model():
@@ -76,10 +70,7 @@ def _prepare(path: str, rotation: int):
     return transform(img.convert("RGB"))
 
 
-def embed_images(
-    work: Sequence[Work],
-    progress: Callable[[int, str | None], None] | None = None,
-) -> dict[tuple[int, int], np.ndarray]:
+def embed_images(work: list, progress=None) -> dict:
     """Embed every (image, rotation) in `work`.
 
     Returns L2-normalized float32 vectors keyed by `(image_id, rotation)`.
@@ -96,22 +87,14 @@ def embed_images(
     import torch
 
     model, _ = _load_model()
-    out: dict[tuple[int, int], np.ndarray] = {}
+    out = {}
 
-    batch: list = []
-    keys: list[tuple[int, int]] = []
-
-    def flush() -> None:
-        if not batch:
-            return
-        with torch.inference_mode():
-            features = model(torch.stack(batch))
-        features = torch.nn.functional.normalize(features, dim=1)
-        for key, vector in zip(keys, features.numpy().astype(np.float32)):
-            out[key] = vector
-        batch.clear()
-        keys.clear()
-
+    # One batch is built up here and run as soon as it is full. Tensors are
+    # prepared inside the loop, not up front: each one is a 3x224x224 float32,
+    # so holding the whole work list in memory at once would cost hundreds of
+    # megabytes on a large scan.
+    batch = []
+    keys = []
     for image_id, path, rotation in work:
         try:
             batch.append(_prepare(path, rotation))
@@ -123,27 +106,30 @@ def embed_images(
             continue
 
         if len(batch) >= EMBED_BATCH_SIZE:
-            flush()
+            with torch.inference_mode():
+                features = model(torch.stack(batch))
+            features = torch.nn.functional.normalize(features, dim=1)
+            for key, vector in zip(keys, features.numpy().astype(np.float32)):
+                out[key] = vector
             if progress is not None:
-                progress(EMBED_BATCH_SIZE, None)
+                progress(len(batch), None)
+            batch = []
+            keys = []
 
-    pending = len(batch)
-    flush()
-    if pending and progress is not None:
-        progress(pending, None)
+    # Whatever is left over after the last full batch.
+    if batch:
+        with torch.inference_mode():
+            features = model(torch.stack(batch))
+        features = torch.nn.functional.normalize(features, dim=1)
+        for key, vector in zip(keys, features.numpy().astype(np.float32)):
+            out[key] = vector
+        if progress is not None:
+            progress(len(batch), None)
 
     return out
 
 
-def cosine(a: np.ndarray, b: np.ndarray) -> float:
+def cosine(a, b) -> float:
     """Cosine similarity of two already-normalized vectors."""
     return float(np.clip(np.dot(a, b), -1.0, 1.0))
 
-
-def zero_vector() -> np.ndarray:
-    return np.zeros(EMBED_DIM, dtype=np.float32)
-
-
-def work_paths(work: Iterable[Work]) -> set[str]:
-    """Distinct files a work list will open -- used for the compute-saved log."""
-    return {path for _, path, _ in work}

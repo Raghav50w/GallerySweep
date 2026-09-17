@@ -6,8 +6,6 @@ transformed copy is a known positive and every other pair a known negative, so
 the labels cost nothing and the whole benchmark is reproducible from a seed.
 """
 
-from __future__ import annotations
-
 import io
 from typing import Callable
 

@@ -1,7 +1,5 @@
 """Synthetic photos, so the suite needs no committed image files."""
 
-from __future__ import annotations
-
 import numpy as np
 import pytest
 from PIL import Image, ImageDraw, ImageFilter

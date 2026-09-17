@@ -3,15 +3,12 @@
 Only one scan runs at a time, so there is no job registry -- just `STATE`.
 """
 
-from __future__ import annotations
-
 import logging
 import os
 import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterator
 
 from app import db
 from app.config import CACHE_DIR, CANDIDATE_HAMMING_GATE, SUPPORTED_EXTENSIONS
@@ -30,8 +27,7 @@ class ScanState:
     done: int = 0
     total: int = 0
     errors: int = 0
-    error_files: list[str] = field(default_factory=list)
-    folder: str | None = None
+    error_files: list = field(default_factory=list)
     mode: str = "fast"
     message: str = ""
     image_count: int = 0
@@ -42,9 +38,23 @@ class ScanState:
     elapsed: float = 0.0
 
     def reset(self) -> None:
-        """Restore every field to its default. The state object is reused, not
-        replaced, so anything holding a reference keeps seeing live values."""
-        self.__init__()  # type: ignore[misc]
+        """Put every field back to its starting value, ready for a new scan.
+
+        The state object is reused rather than replaced, so anything holding a
+        reference to it keeps seeing live values."""
+        self.phase = "idle"
+        self.done = 0
+        self.total = 0
+        self.errors = 0
+        self.error_files = []
+        self.mode = "fast"
+        self.message = ""
+        self.image_count = 0
+        self.candidate_pairs = 0
+        self.cached_hits = 0
+        self.embedded = 0
+        self.scored_pairs = 0
+        self.elapsed = 0.0
 
     def as_dict(self) -> dict:
         return {
@@ -52,8 +62,7 @@ class ScanState:
             "done": self.done,
             "total": self.total,
             "errors": self.errors,
-            "error_files": self.error_files[:MAX_REPORTED_ERRORS],
-            "folder": self.folder,
+            "error_files": self.error_files,
             "mode": self.mode,
             "message": self.message,
             "image_count": self.image_count,
@@ -67,14 +76,13 @@ class ScanState:
 
 STATE = ScanState()
 _LOCK = threading.Lock()
-_THREAD: threading.Thread | None = None
 
 
 def is_running() -> bool:
     return STATE.phase in {"walking", "hashing", "matching", "embedding"}
 
 
-def iter_images(folder: Path) -> Iterator[Path]:
+def iter_images(folder: Path):
     """Every supported image under `folder`, recursively.
 
     Recursive by default is the point: the same photo in `Folder1` and
@@ -84,7 +92,7 @@ def iter_images(folder: Path) -> Iterator[Path]:
     for dirpath, dirnames, filenames in os.walk(folder):
         here = str(Path(dirpath).resolve()).lower()
         if here == cache or here.startswith(cache + os.sep):
-            dirnames[:] = []  # never re-scan our own thumbnail cache
+            dirnames.clear()  # never re-scan our own thumbnail cache
             continue
         dirnames.sort()
         for name in sorted(filenames):
@@ -94,16 +102,14 @@ def iter_images(folder: Path) -> Iterator[Path]:
 
 def start_scan(folder: Path, mode: str = "fast") -> None:
     """Kick off a background scan. Raises RuntimeError if one is already going."""
-    global _THREAD
     with _LOCK:
         if is_running():
             raise RuntimeError("a scan is already running")
         STATE.reset()
         STATE.phase = "walking"
-        STATE.folder = str(folder)
         STATE.mode = mode
-        _THREAD = threading.Thread(target=_run, args=(folder, mode), daemon=True)
-        _THREAD.start()
+        thread = threading.Thread(target=_run, args=(folder, mode), daemon=True)
+        thread.start()
 
 
 def _record_error(path: Path, exc: Exception) -> None:
@@ -126,7 +132,7 @@ def _run(folder: Path, mode: str) -> None:
         STATE.total = len(files)
         STATE.phase = "hashing"
 
-        ids: list[int] = []
+        ids = []
         for path in files:
             try:
                 stat = path.stat()
@@ -181,7 +187,7 @@ def _run(folder: Path, mode: str) -> None:
         conn.close()
 
 
-def _build_pairs(conn, ids: list[int]) -> None:
+def _build_pairs(conn, ids: list) -> None:
     """Hash-stage candidate generation, written to `pairs` from scratch."""
     ordered = sorted(set(ids))
     rows = db.images_by_id(conn, ordered)
@@ -195,13 +201,12 @@ def _build_pairs(conn, ids: list[int]) -> None:
 
     # Index order follows sorted ids, and find_candidate_pairs only emits a < b,
     # so image_a < image_b holds without another sort.
-    db.replace_pairs(
-        conn,
-        (
+    pair_rows = []
+    for a, b, hamming, rot_a, rot_b in candidates:
+        pair_rows.append(
             (ordered[int(a)], ordered[int(b)], int(hamming), int(rot_a), int(rot_b))
-            for a, b, hamming, rot_a, rot_b in candidates
-        ),
-    )
+        )
+    db.replace_pairs(conn, pair_rows)
     log.info(
         "candidate gate <= %d bits produced %d pairs from %d images",
         CANDIDATE_HAMMING_GATE,
